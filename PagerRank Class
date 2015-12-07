@@ -1,0 +1,297 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.util.ArrayList;
+
+/**
+ * @author rbokok01
+ * e-mail: el_riebe@hotmail.com
+ */
+public class Ranking 
+{ 
+	public static void main(String[] args) throws IOException 
+	{
+		ArrayList<String> visited = new ArrayList<>();
+		String[][] adMatrix = new String[500][500];
+		String[][] rankMatrix = new String[50][500];
+		
+		fillArray(visited);
+        createMatrix(visited,adMatrix);
+        fileAdMatrix(adMatrix, "AdjacencyMatrix.txt");
+        fileInlinks(visited,adMatrix);
+        fileOutlinks(visited,adMatrix);
+        
+        /*CALCULATING PAGE RANK -> PR(A) = (1-d) + d(PR(t1)/C(t1) + ... + PR(tn)/C(tn)), WHERE d is the dampening factor (0.15) and c the number of outlinks of that page.*/ 
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 0.15);}
+        fileMatrix(rankMatrix,"PageRank015.txt");
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 1.0);}
+        fileMatrix(rankMatrix,"PageRank100.txt");
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 0.0);}
+        fileMatrix(rankMatrix,"PageRank00.txt");
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 0.25);}
+        fileMatrix(rankMatrix,"PageRank025.txt");
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 0.50);}
+        fileMatrix(rankMatrix,"PageRank050.txt");
+        
+        for(int i = 0; i <= rankMatrix.length; i++){pageRank(visited,adMatrix,rankMatrix,i, 0.75);}
+        fileMatrix(rankMatrix,"PageRank075.txt");
+	}
+	/**
+	 * @param visited
+	 * @return
+	 * @throws IOException
+	 * Fills the ArrayList with the visited URL's from that are read form the file
+	 */
+	public static ArrayList<String> fillArray(ArrayList<String> visited) throws IOException
+	{
+		URL reading = new URL("http://www.dcs.bbk.ac.uk/~martin/sewn/ls4/sewn-crawl-2015.txt");
+        BufferedReader first = new BufferedReader(new InputStreamReader(reading.openStream()));
+        String line;
+        while ((line = first.readLine()) != null)
+        {
+        	if (line.contains("Visited")){visited.add(line.substring(9));}
+        }
+        first.close();
+		return visited;
+	}
+	
+	/**
+	 * @param visited
+	 * @param matrix
+	 * @return
+	 * @throws IOException
+	 * Reads a text file from a URL and Creates an Adjacency Matrix
+	 */
+	public static String[][] createMatrix(ArrayList<String> visited, String[][] matrix) throws IOException
+	{
+		URL reading = new URL("http://www.dcs.bbk.ac.uk/~martin/sewn/ls4/sewn-crawl-2015.txt");
+    	BufferedReader read = new BufferedReader(new InputStreamReader(reading.openStream()));
+    	String link;
+        int counter = -1;
+        
+    	while((link = read.readLine()) != null && counter < 499)
+    	{
+	    	if(link.contains("Visited")){counter++;}
+		    for(int j = 0; j < matrix.length; j++)
+		    {	
+		    	if(visited.get(j).equals(link.substring(10))){matrix[counter][j] = "1";}
+		    	else
+		    	{
+		    		if (matrix[counter][j] != "1"){matrix[counter][j] = "0";}	
+		    	}
+		    }
+    	}
+        read.close();
+		return matrix;
+	}
+	
+	/**
+	 * @param url
+	 * @return
+	 * @throws java.net.MalformedURLException
+	 * Checks whether the URL is absolute or not. All credit for this method goes to StackOverflow
+	 */
+	public static boolean isAbsoluteURL(String url) throws java.net.MalformedURLException 
+	{
+		final URL baseHTTP = new URL("http://www.dcs.bbk.ac.uk");
+		final URL baseFILE = new URL("file:///");
+		URL frelative = new URL(baseFILE, url);
+		URL hrelative = new URL(baseHTTP, url);
+		return frelative.equals(hrelative);
+	}
+	
+	/**
+	 * @param obj
+	 * @param matrix
+	 * @throws UnsupportedEncodingException 
+	 * @throws FileNotFoundException
+	 * Creates a file with the Matrix's content 
+	 */
+	public static void fileAdMatrix(String[][] matrix, String name) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		PrintWriter file = new PrintWriter(name,"UTF-8");
+		for (int i = 0; i < matrix.length; i++)
+		{
+			for (int a = 0; a < matrix.length; a++){file.print(matrix[i][a] + " ");}
+			file.println();
+		}
+		file.close();
+	}
+	/**
+	 * @param obj
+	 * @param matrix
+	 * @throws UnsupportedEncodingException 
+	 * @throws FileNotFoundException
+	 * Creates a file with the PageRank Matrix's content 
+	 */
+	public static void fileMatrix(String[][] matrix, String name) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		PrintWriter file = new PrintWriter(name,"UTF-8");
+		for (int i = 0; i < matrix.length; i++)
+		{
+			if( i < 10){file.print("Iteration Number: " + i + " ");}
+			else{file.print("Iteration Number: " + i);}
+			for (int a = 0; a < matrix.length; a++){file.print("| " + matrix[i][a] + " |");}
+			file.println();
+		}
+		file.close();
+	}
+	
+	/**
+	 * @param matrix
+	 * Outputs the Matrix in the console
+	 */
+	public static void printMatrix(String[][] matrix)
+	{
+		for (int i = 0; i < matrix.length; i++)
+		{
+			for (int a = 0; a < matrix.length; a++){System.out.print(matrix[i][a] + " ");}
+			System.out.println();
+		}
+	}
+	
+	/**
+	 * @param inLinks
+	 * @param matrix
+	 * @throws FileNotFoundException
+	 * @throws UnsupportedEncodingException
+	 * Creates a file with the number of Inlinks per page with the Average(mean), Variance and Standard Deviation
+	 */
+	public static void fileInlinks(ArrayList<String> visited,String[][] matrix) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		PrintWriter file = new PrintWriter("Inlinks.txt","UTF-8");
+		int links = 0; int totalLinks = 0;
+		double average = 0; double variance = 0; double standarDeviation = 0;
+        for(int j = 0; j < matrix.length; j++)
+        {
+        	for (int i = 0; i < matrix.length; i++)
+        	{
+        		if(matrix[i][j] == "1"){links++;}
+        	}
+        	totalLinks += links;
+        	variance += links*links;
+        	file.println(visited.get(j) + " ->" + " Has the following number of Inlinks: " + links);
+        	links = 0;
+        }
+        average = totalLinks/visited.size();
+        variance = variance/visited.size();
+        standarDeviation = Math.sqrt(variance);
+        file.println();
+        file.println("The Average Number of Inlinks is: " + average);
+        file.println("The Variance of the Inlinks dataset is: " + variance);
+        file.println("The Standard deviation of the Inlinks dataset is: " + standarDeviation);
+        file.close();
+	}
+	
+	/**
+	 * @param inLinks
+	 * @param matrix
+	 * @throws FileNotFoundException
+	 * @throws UnsupportedEncodingException
+	 * Creates a file with the number of Outlinks per page with the Average(mean), Variance and Standard Deviation
+	 */
+	public static void fileOutlinks(ArrayList<String> visited,String[][] matrix) throws FileNotFoundException, UnsupportedEncodingException
+	{
+		PrintWriter file = new PrintWriter("Outlinks.txt","UTF-8");
+		int links = 0; int totalLinks = 0;
+		double average = 0; double variance = 0; double standarDeviation = 0;
+        for(int i = 0; i < matrix.length; i++)
+        {
+        	for (int j = 0; j < matrix.length; j++)
+        	{
+        		if(matrix[i][j] == "1"){links++;}
+        	}
+        	totalLinks += links;
+        	variance += links*links;
+        	file.println(visited.get(i) + " ->" + " Has the following number of Outlinks: " + links);
+        	links = 0;
+        }
+        average = totalLinks/visited.size();
+        variance = variance/visited.size();
+        standarDeviation = Math.sqrt(variance);
+        file.println("The Average Number of Outlinks is: " + average);
+        file.println("The Variance of the Outlinks dataset is: " + variance);
+        file.println("The Standard deviation of the Outlinks dataset is: " + standarDeviation);
+        file.close();
+	}
+	/**
+	 * @param visited
+	 * @param matrix
+	 * @throws NumberFormatException
+	 * @throws IOException
+	 * Calculate the Page Rank of the individual pages (URL's), through several iterations
+	 * The formula is:  PR(A) = (1-d) + d(PR(t1)/C(t1) + ... + PR(tn)/C(tn))
+	 */
+	public static void pageRank(ArrayList<String> visited, String[][] matrix, String[][] rankMatrix, int column, double dFactor) throws NumberFormatException, IOException
+	{
+		boolean first = true;
+		String filename = "I:\\workspace2\\SearchEngines\\Outlinks.txt"; String line = ""; // AS the filename path comes from my own computer, in order to compute PageRank accordingly you should 
+		int c = 0; int iteration = 50; int counter = 0;									// set the value to your filename path whatever that may be.
+        double commonRank = 0; double d = dFactor; double t = 1; double pageRank = 0;
+        
+        ArrayList<Double> inLinksRank = new ArrayList<>();
+        ArrayList<Integer> outFromLink = new ArrayList<>();
+        BufferedReader read = new BufferedReader(new FileReader(filename));
+        
+        for (int a = 0; a < iteration; a++) // Number of iteration to calculate accurate PageRank
+        {
+        	counter = 0;
+	        
+	        for(int i = 0; i < matrix.length; i++)
+	        {
+	        	if(matrix[i][column].equals("1")) // Whenever a "1" is encountered do something
+	        	{
+	        		String hold = visited.get(i);
+	        		while ((line = read.readLine()) != null) // Reading my own file that contains the number of Outlinks per Page
+	        		{
+	        			if(line.contains(hold)) // if there is a match then get the number of Outlinks
+	        			{
+	        				String outLinks = line.substring(line.length()-2);
+	        				if(outLinks.substring(0,1).equals(" ")){outLinks = outLinks.substring(outLinks.length()-1);}
+	        				c = Integer.parseInt(outLinks);
+	        				outFromLink.add(c);
+	        				break;
+	        			}
+	        		}
+	        		if (first == true) // True for the first iteration, calculate and store the individual pagerank for the Current page inlinks
+	        		{
+	        			commonRank += t/c;
+	        			inLinksRank.add(t/c);
+	        		}
+	        		else // Keep calculating Through the iterations with the updated values
+	        		{
+	        			commonRank += inLinksRank.get(counter)/outFromLink.get(counter);
+	        			inLinksRank.set(counter,inLinksRank.get(counter)/outFromLink.get(counter));
+	        		}
+	        		counter++;
+	        	}
+	        	
+	        }
+	        pageRank = (1-d) + (d*commonRank);
+	        
+	        if (pageRank > 100000) // To be honest, this is dealing with some errors in the pageRank calculation for some of the URL's, no more than a few, but still, couldn't work it out in time
+	        {
+	        	pageRank = 1.0; 
+	        	String rankValue = String.format("%.6f", pageRank ); // Formatting the value to store it into a 2D array to create a nice file
+	        	rankMatrix[a][column] = rankValue;
+	        }
+	        else
+	        {
+	        	String rankValue = String.format("%.6f", pageRank ); // Formatting the value to store it into a 2D array to create a nice file
+	        	rankMatrix[a][column] = rankValue;
+	        }
+	        first = false;
+        }
+        read.close();
+	}
+}
